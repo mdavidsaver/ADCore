@@ -1,17 +1,71 @@
-sudo: required
+# .travis.xml for use with EPICS Base ci-scripts
+# (see: https://github.com/epics-base/ci-scripts)
+
 language: cpp
 compiler: gcc
+dist: bionic
+
+# Minimal set of packages needed to compile EPICS Base
+
+addons:
+  apt:
+    packages:
+    - libreadline6-dev
+    - libncurses5-dev
+    - perl
+    - re2c
+    - libgraphicsmagick++-dev
+    - libhdf5-dev
+    - libjpeg-dev
+    - libnetcdf-dev
+    - libtiff-dev
+    - libz-dev
+
 env:
-- EPICS_HOST_ARCH=linux-x86_64
-before_install:
-- bash ci/install-packages.sh
+  global:
+    - SETUP_PATH=.ci-local:.ci
+
 install:
-- make
+  - python .ci/cue.py prepare
+
 script:
-- "valgrind --leak-check=yes --log-file=valgrind_output.txt ./bin/linux-x86_64/plugin-test --log_level=test_suite"
-after_success:
-- sh ci/coverage.sh
-- coveralls-lcov --source-encoding=ISO-8859-1 ci/coverage.info
-- tail --lines 15 valgrind_output.txt
-notifications:
-  slack: epicsareadetector:xf0ac8PfwqcSqi2gE0tUcUkP
+  - echo "XML2_INCLUDE=/usr/include/libxml2" >> configure/CONFIG_SITE
+  - python .ci/cue.py build
+  - python .ci/cue.py test
+  - python .ci/cue.py test-results
+
+# Build on Linux using default gcc for Base branches 7.0 and 3.15
+
+jobs:
+  include:
+
+# Different configurations of default gcc and clang
+
+  - env: BASE=7.0
+
+  - env: BASE=7.0
+    compiler: clang
+
+  - env: BASE=7.0
+
+  - env: BASE=7.0 EXTRA="CMD_CXXFLAGS=-std=c++11"
+    compiler: clang
+
+# Trusty: compiler versions very close to RHEL 7
+
+  - env: BASE=7.0
+    dist: trusty
+
+  - env: BASE=7.0 EXTRA="CMD_CXXFLAGS=-std=c++11"
+    dist: trusty
+
+# MacOS build
+
+  - env: BASE=7.0
+    os: osx
+    compiler: clang
+
+# Windows builds
+
+  - env: BASE=7.0
+    os: windows

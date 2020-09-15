@@ -20,6 +20,8 @@
 /* asynDriver.h is needed only to define epicsInt64 on 3.14 */
 #include <asynDriver.h>
 
+#include <shareLib.h>
+
 /** Success return code  */
 #define ND_SUCCESS 0
 /** Failure return code  */
